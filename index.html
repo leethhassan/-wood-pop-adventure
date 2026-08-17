@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>WOOD POP ADVENTURE 2.0</title>
+<meta name="theme-color" content="#24170f">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+<style>
+:root{--bg:#24170f;--panel:#5b3a24;--panel2:#7e5233;--gold:#f4cc55;--paper:#f6e7c7;--accent:#e98439;--green:#54b48d;--red:#d95650}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none}
+html,body{margin:0;width:100%;height:100%;height:100dvh;overflow:hidden;background:#0a0603;font-family:Tahoma,Segoe UI,sans-serif;color:var(--paper);touch-action:none}
+/* #stage centers a fixed phone-shaped frame so the game always renders at mobile
+   proportions and never stretches full-width on tablets/desktops. */
+#stage{position:fixed;inset:0;height:100dvh;display:flex;align-items:center;justify-content:center;background:#0a0603}
+#app{position:relative;width:100%;max-width:480px;height:100%;height:100dvh;max-height:100dvh;margin:0 auto;background:radial-gradient(circle at 50% 0,#543721,#1d1109 75%);overflow:hidden;box-shadow:0 0 60px #000c}
+@supports not (height:100dvh){#stage,#app,html,body{height:100vh}}
+@media (min-width:481px){#app{border-radius:28px}}
+.screen{position:absolute;inset:0;display:none;flex-direction:column;padding:env(safe-area-inset-top) 12px env(safe-area-inset-bottom);overflow:auto}
+.screen.active{display:flex}
+.btn{border:2px solid #29180e;border-radius:15px;padding:13px 16px;background:linear-gradient(#805535,#54351f);color:var(--paper);font-weight:900;font-size:15px;box-shadow:0 4px #29180e;cursor:pointer}
+.btn:active{transform:translateY(3px);box-shadow:0 1px #29180e}.accent{background:linear-gradient(#f4ad69,#e87530)}
+.btn.small{padding:8px 11px;font-size:12px}.round{width:48px;height:48px;padding:0;border-radius:50%}
+.topbar,.backrow{display:flex;align-items:center;gap:8px;padding:10px 2px}.backrow h2{flex:1;text-align:center}
+.pill{background:#0006;border:1px solid #fff2;border-radius:20px;padding:7px 12px;font-weight:900}
+.logo{text-align:center;color:var(--gold);font-size:clamp(26px,9vw,38px);font-weight:1000;text-shadow:0 4px #71360d,0 8px 16px #0008;margin:20px 0 4px}
+.sub{text-align:center;opacity:.8;margin-bottom:22px;font-size:clamp(12px,3.5vw,15px)}.menu{width:min(430px,100%);margin:auto;display:flex;flex-direction:column;gap:12px;padding:0 20px}
+.card{background:linear-gradient(#7b5033,#563720);border:2px solid #29180e;border-radius:18px;padding:15px;box-shadow:0 5px 14px #0005}
+.worlds{display:flex;gap:10px;overflow:auto;padding:5px}.world{min-width:145px;padding:14px;border-radius:16px;text-align:center;border:2px solid #29180e;font-weight:900}
+.levels{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;padding:10px 3px 40px}.level{aspect-ratio:1;border-radius:14px;background:linear-gradient(#805535,#563720);border:2px solid #29180e;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:900}.locked{opacity:.4}.stars{font-size:10px;color:var(--gold)}
+#boardWrap{width:min(430px,100%);aspect-ratio:1;margin:4px auto;position:relative}canvas{display:block;width:100%;height:100%}
+#trayWrap{width:min(430px,100%);height:125px;margin:auto}
+.powerbar{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;padding:4px}.power{width:54px;height:54px;border-radius:14px;border:2px solid #1b2d24;background:linear-gradient(#3d765f,#284c3d);color:#fff;font-size:21px;position:relative;transition:box-shadow .15s}.count{position:absolute;right:-5px;bottom:-5px;background:var(--gold);color:#422900;border-radius:10px;padding:1px 6px;font-size:11px}
+.target{text-align:center;background:#0005;border-radius:14px;padding:7px;margin:2px auto;width:min(430px,100%);font-size:12px;font-weight:bold}
+.howto{width:min(430px,100%);margin:4px auto 2px;background:linear-gradient(#8a5a35,#654127);border:2px solid #29180e;border-radius:14px;padding:8px 10px;text-align:center;font-size:12px;line-height:1.5;box-shadow:0 3px 8px #0004}.howto b{color:var(--gold)}
+.boardhint{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;color:#fff9;text-align:center;font-weight:900;font-size:16px;text-shadow:0 2px 4px #000;opacity:0;transition:.2s}.boardhint.show{opacity:1}.piecehint{color:var(--gold);text-align:center;font-size:11px;margin-top:-2px}
+.popup{position:absolute;pointer-events:none;font-weight:1000;color:var(--gold);font-size:25px;text-shadow:0 3px 5px #000;animation:up .9s forwards}@keyframes up{0%{opacity:0;transform:scale(.5)}15%{opacity:1}100%{opacity:0;transform:translateY(-70px) scale(1.1)}}
+.modalbg{position:fixed;inset:0;background:#0009;display:none;align-items:center;justify-content:center;z-index:20}.modalbg.show{display:flex}.modal{width:min(360px,90%);background:linear-gradient(#805535,#52331f);border:3px solid var(--gold);border-radius:22px;padding:22px;text-align:center}.modal h2{color:var(--gold)}
+.shop,.collection{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}.item{padding:12px;border:2px solid #29180e;border-radius:14px;text-align:center;background:#0003;min-height:95px}.toggle{display:flex;justify-content:space-between;padding:13px;border-bottom:1px solid #fff2}.switch{width:48px;height:25px;border-radius:20px;background:#2c2017}.switch.on{background:var(--green)}.knob{width:21px;height:21px;margin:2px;border-radius:50%;background:#fff}.on .knob{margin-left:25px}
+.meter{height:9px;background:#0006;border-radius:9px;overflow:hidden;margin:7px}.meter i{display:block;height:100%;width:0;background:var(--gold);transition:width .2s}
+#toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#000d;padding:10px 18px;border-radius:20px;opacity:0;transition:.2s;z-index:50}#toast.show{opacity:1}
+.confetti{position:fixed;width:8px;height:14px;animation:fall 1.5s forwards;z-index:30}@keyframes fall{to{transform:translateY(100vh) rotate(720deg);opacity:0}}
+</style>
+</head>
+<body><div id="stage"><div id="app">
+
+<section class="screen active" id="menu">
+ <div class="topbar"><span class="pill">🪙 <b id="coins">0</b></span><span class="pill">🏆 <b id="best">0</b></span></div>
+ <div class="logo">WOOD POP<br><small>ADVENTURE 2.0</small></div><div class="sub">لغز المكعبات الخشبية — نسخة محسّنة</div>
+ <div class="menu">
+  <button class="btn accent" onclick="openMap()">🗺️ المغامرة</button><button class="btn" onclick="startEndless()">▶️ اللعب الحر</button>
+  <button class="btn" onclick="openDaily()">📅 التحدي اليومي</button><button class="btn" onclick="openMode()">🎮 أوضاع اللعب</button>
+  <button class="btn" onclick="openShop()">🛒 المتجر</button><button class="btn" onclick="openCollection()">🎨 المجموعة</button>
+  <button class="btn" onclick="openAchievements()">🏅 الإنجازات</button>
+  <button class="btn" onclick="openSettings()">⚙️ الإعدادات</button>
+ </div>
+</section>
+
+<section class="screen" id="map"><div class="backrow"><button class="btn round" onclick="menu()">➜</button><h2>🗺️ المغامرة</h2><span class="pill">🪙<b id="mapCoins"></b></span></div><div class="worlds" id="worlds"></div><h3 id="worldName" style="text-align:center;color:var(--gold)"></h3><div class="levels" id="levels"></div></section>
+
+<section class="screen" id="game"><div class="backrow"><button class="btn round" onclick="menu()">➜</button><span class="pill" style="flex:1;text-align:center">SCORE <b id="score">0</b></span><span class="pill">🏆<b id="gameBest">0</b></span></div><div class="target" id="target"></div>
+<div class="howto"><b>🎯 طريقة اللعب:</b> اسحب قطعة من الأسفل وضعها على اللوحة. أكمل صفًا أو عمودًا بالكامل لتحصل على نقاط وتزيله. لاستخدام أداة، اضغط عليها ثم اضغط على الخانة أو القطعة المستهدفة. <b>ارفع مجموع النقاط إلى الهدف للفوز.</b></div>
+<div class="piecehint">👆 اسحب القطع من هنا إلى أي مكان فارغ في اللوحة</div>
+<div class="meter"><i id="comboMeter"></i></div><div id="boardWrap"><canvas id="board"></canvas><div class="boardhint" id="boardHint">اسحب القطعة إلى هنا 👆</div></div><div id="trayWrap"><canvas id="tray"></canvas></div><div class="powerbar" id="powers"></div></section>
+
+<section class="screen" id="daily"><div class="backrow"><button class="btn round" onclick="menu()">➜</button><h2>📅 DAILY</h2></div><div class="card"><h3>🔥 Daily Streak</h3><div id="streak"></div><button class="btn accent" style="width:100%" onclick="claimDaily()">استلام المكافأة</button></div><div class="card" style="margin-top:12px;text-align:center"><h3>Today's Puzzle</h3><p id="dailyText"></p><button class="btn accent" onclick="startDaily()">PLAY</button></div></section>
+
+<section class="screen" id="mode"><div class="backrow"><button class="btn round" onclick="menu()">➜</button><h2>🎮 الأوضاع</h2></div><div class="menu"><button class="btn" onclick="startEndless()">♾️ Classic Endless</button><button class="btn" onclick="startTimed()">⏱️ Time Attack — دقيقتان</button><button class="btn" onclick="startZen()">🧘 Zen Mode</button><button class="btn" onclick="startBomb()">💣 Bomb Rush</button><button class="btn" onclick="openBonus()">🔀 Shift Grid</button></div></section>
+
+<section class="screen" id="shop"><div class="backrow"><button class="btn round" onclick="menu()">➜</button><h2>🛒 SHOP</h2><span class="pill">🪙<b id="shopCoins"></b></span></div><h3>Power-Ups</h3><div class="shop" id="shopPower"></div><h3>Skins</h3><div class="shop" id="shopSkins"></div></section>
+
+<section class="screen" id="collection"><div class="backrow"><button class="btn round" onclick="menu()">➜</button><h2>🎨 COLLECTION</h2></div><div class="collection" id="collectionGrid"></div></section>
+
+<section class="screen" id="achievements"><div class="backrow"><button class="btn round" onclick="menu()">➜</button><h2>🏅 الإنجازات</h2></div><div class="collection" id="achGrid"></div></section>
+
+<section class="screen" id="settings"><div class="backrow"><button class="btn round" onclick="menu()">➜</button><h2>⚙️ SETTINGS</h2></div><div class="card"><div class="toggle">المؤثرات الصوتية <span class="switch on" id="sfx" onclick="toggle('sfx')"><i class="knob"></i></span></div><div class="toggle">الاهتزاز <span class="switch on" id="vib" onclick="toggle('vib')"><i class="knob"></i></span></div><div class="toggle">الحركة والمؤثرات <span class="switch on" id="fx" onclick="toggle('fx')"><i class="knob"></i></span></div></div><button class="btn" style="margin-top:18px;background:var(--red)" onclick="resetGame()">إعادة ضبط التقدم</button></section>
+
+<section class="screen" id="bonus"><div class="backrow"><button class="btn round" onclick="menu()">➜</button><h2>🔀 SHIFT GRID</h2><span class="pill">SCORE <b id="bonusScore">0</b></span><span class="pill">🪙<b id="bonusCoins"></b></span></div><div id="bonusWrap" style="width:min(390px,100%);aspect-ratio:1;margin:auto"><canvas id="bonusCanvas"></canvas></div></section>
+
+<div class="modalbg" id="result"><div class="modal"><h2 id="resultTitle"></h2><div id="resultStars" style="font-size:38px;color:var(--gold)"></div><h3 id="resultScore"></h3><p id="resultReward"></p><button class="btn accent" id="nextBtn" onclick="nextLevel()">التالي</button><button class="btn" style="margin-top:8px" onclick="closeResult()">القائمة</button></div></div>
+<div id="toast"></div>
+</div></div>
+
+<script>
+const SIZE=9, palette=['#e9823a','#4fae8e','#df5962','#f2c94c','#6c8ee0','#af70d0','#79ad4b','#e77fb0'];
+const worlds=[['الغابة','#79a949','#456f2b'],['وادي الحلوى','#e67caf','#b94e84'],['الصحراء','#dfb05e','#ae7d32'],['جبل الثلج','#bfe6f0','#6ba5bc'],['الأدغال','#42925d','#24613b'],['المحيط','#438fc8','#275e8e'],['الفضاء','#6257a6','#332a6b'],['البركان','#c95432','#762512']];
+const shapes=[[[0,0]],[[0,0],[1,0]],[[0,0],[0,1]],[[0,0],[1,0],[2,0]],[[0,0],[0,1],[0,2]],[[0,0],[1,0],[0,1],[1,1]],[[0,0],[0,1],[0,2],[1,2]],[[0,0],[1,0],[2,0],[1,1]],[[1,0],[2,0],[0,1],[1,1]],[[0,0],[1,0],[1,1],[2,1]],[[1,0],[0,1],[1,1],[1,2]],[[0,0],[1,0],[0,1],[0,2]],[[1,0],[0,1],[1,1],[2,1],[1,2]]];
+const skinDefs={
+ classic:{bg:'#8a5a35'}, crystal:{bg:'#2f6a82'}, candy:{bg:'#a8446f'}, galaxy:{bg:'#2c2154'},
+ jungle:{bg:'#245030'}, fire:{bg:'#6b2311'}, ice:{bg:'#356a78'}, gold:{bg:'#96690f'}
+};
+const achievementDefs=[
+ {id:'first_win',name:'أول فوز 🎉',cond:()=>Object.keys(save.stars||{}).length>=1,reward:30},
+ {id:'combo_master',name:'سيد الكومبو 🔥',cond:()=>maxCombo>=5,reward:50},
+ {id:'collector',name:'جامع السكنات 🎨',cond:()=>save.owned.length>=4,reward:60},
+ {id:'high_score',name:'نجم الأداء ⭐',cond:()=>save.best>=5000,reward:100},
+ {id:'daily_streak',name:'مثابر 🔥',cond:()=>save.streak>=5,reward:80},
+ {id:'level_master',name:'سيد المغامرة 🗺️',cond:()=>save.unlock>=20,reward:120}
+];
+const defaults={coins:150,best:0,unlock:1,stars:{},power:{hammer:2,line:2,rotate:3,shuffle:2,undo:2,magic:1},skin:'classic',owned:['classic'],settings:{sfx:true,vib:true,fx:true},streak:0,lastDaily:'',dailyBest:0,achievements:{}};
+let save=Object.assign({},defaults,JSON.parse(localStorage.wp2||'{}'));save.power=Object.assign({},defaults.power,save.power);save.settings=Object.assign({},defaults.settings,save.settings);save.achievements=save.achievements||{};
+let grid=[],tray=[],ctx,tctx,drag=null,score=0,combo=0,maxCombo=0,lines=0,moves=0,current=null,mode='endless',timer=null,history=null,pendingPower=null,placedFx=[];
+const $=id=>document.getElementById(id);
+function persist(){localStorage.wp2=JSON.stringify(save);refreshCoins()}
+function refreshCoins(){['coins','mapCoins','shopCoins','bonusCoins'].forEach(x=>$(x)&&($(x).textContent=save.coins));$('best').textContent=save.best}
+function checkAchievements(){achievementDefs.forEach(a=>{if(!save.achievements[a.id]&&a.cond()){save.achievements[a.id]=true;save.coins+=a.reward;persist();toast('🏅 إنجاز جديد: '+a.name+' +'+a.reward+' 🪙')}})}
+function menu(){hide();$('menu').classList.add('active');refreshCoins()}
+function hide(){document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'))}
+function openMap(){hide();$('map').classList.add('active');renderMap()}
+function renderMap(){let w=$('worlds');w.innerHTML='';worlds.forEach((x,i)=>{let d=document.createElement('div');d.className='world';d.style.background=`linear-gradient(${x[1]},${x[2]})`;d.textContent=x[0];d.onclick=()=>renderLevels(i);w.appendChild(d)});renderLevels(0)}
+function renderLevels(w){$('worldName').textContent=worlds[w][0];let g=$('levels');g.innerHTML='';for(let i=0;i<13;i++){let id=w*13+i+1,un=id<=save.unlock,s=save.stars[id]||0,d=document.createElement('div');d.className='level '+(un?'':'locked');d.innerHTML=un?`${id}<div class=stars>${'⭐'.repeat(s)+'☆'.repeat(3-s)}</div>`:'🔒';if(un)d.onclick=()=>startLevel(makeLevel(id),true);g.appendChild(d)}}
+function makeLevel(id){
+  let type='score';
+  if(id>=11 && id%5===0) type='combo';
+  else if(id>=11 && id%4===0) type='lines';
+  const val=type==='score'?300+id*55:type==='combo'?2+Math.min(6,Math.floor(id/15)):4+Math.floor(id/7);
+  // Obstacles are disabled for the first 20 levels so the rules are easy to learn.
+  let obs=[];
+  if(id>20){
+    const n=Math.min(5,Math.floor(id/25));
+    const used=new Set();
+    while(used.size<n){const x=Math.floor(Math.random()*9),y=Math.floor(Math.random()*9); if(x<3&&y<3) continue; used.add(x+','+y)}
+    used.forEach(k=>{const [x,y]=k.split(',').map(Number);const type2=Math.random()<0.6?1:2;obs.push({x,y,t:type2})});
+  }
+  return{id,type,val,obs,stage:Math.min(5,Math.floor(id/25))};
+}
+function startLevel(l,adv=false){current=l;mode=adv?'adventure':'endless';setupGame(l)}
+function setupGame(l){
+  hide();$('game').classList.add('active');clearInterval(window._clock);
+  grid=Array.from({length:SIZE},()=>Array(SIZE).fill(null));
+  l.obs?.forEach(o=>grid[o.y][o.x]={c:o.t===2?'#bfe6f0':'#777',t:o.t,d:o.t===1?2:1});
+  score=combo=maxCombo=lines=moves=0;history=null;pendingPower=null;placedFx=[];
+  tray=makeTray();
+  renderPower();resize();hud();
+  $('boardHint').classList.add('show');setTimeout(()=>$('boardHint').classList.remove('show'),2200);
+  if(mode==='timed')startClock();else timer=null;
+}
+function startEndless(){mode='endless';current={type:'endless',val:999999,stage:2,obs:[]};setupGame(current)}
+function startTimed(){mode='timed';current={type:'score',val:9999,stage:2,obs:[]};setupGame(current);timer=120;tick()}
+function startZen(){mode='zen';current={type:'zen',val:999999,stage:1,obs:[]};setupGame(current)}
+function startBomb(){mode='bomb';current={type:'score',val:3000,stage:3,obs:[]};setupGame(current)}
+function tick(){clearInterval(window._clock);window._clock=setInterval(()=>{timer--;hud();if(timer<=0){clearInterval(window._clock);end(false)}},1000)}
+function startClock(){timer=120;tick()}
+function makeTray(){
+  let a=[];
+  for(let i=0;i<3;i++){
+    let sh=shapes[Math.floor(Math.random()*shapes.length)].map(x=>x.slice());
+    const special=(current&&current.stage>=2&&Math.random()<.08)?(Math.random()<.5?'bomb':'rainbow'):null;
+    a.push({cells:sh,c:palette[Math.floor(Math.random()*palette.length)],special});
+  }
+  // Always guarantee at least one piece has a legal placement.
+  if(!a.some(p=>canAnywhere(p.cells))) a[0]={cells:[[0,0]],c:palette[Math.floor(Math.random()*palette.length)],special:null};
+  return a;
+}
+function canPlace(c,gx,gy){return c.every(([x,y])=>x+gx>=0&&y+gy>=0&&x+gx<SIZE&&y+gy<SIZE&&!grid[y+gy][x+gx])}
+function canAnywhere(c){for(let y=0;y<SIZE;y++)for(let x=0;x<SIZE;x++)if(canPlace(c,x,y))return true;return false}
+function countPlacements(){let n=0;tray.forEach(p=>{if(!p)return;for(let y=0;y<SIZE;y++)for(let x=0;x<SIZE;x++)if(canPlace(p.cells,x,y))n++});return n}
+function place(p,idx,gx,gy){
+  if(!canPlace(p.cells,gx,gy)){toast('المكان غير صالح');return}
+  history={grid:JSON.parse(JSON.stringify(grid)),score,combo,lines,moves,tray:JSON.parse(JSON.stringify(tray))};
+  p.cells.forEach(([x,y])=>{grid[y+gy][x+gx]={c:p.c,t:p.special||0,d:1};placedFx.push({x:x+gx,y:y+gy,start:performance.now()})});
+  if(p.special==='bomb'){for(let y=gy-1;y<=gy+1;y++)for(let x=gx-1;x<=gx+1;x++)if(grid[y]?.[x])grid[y][x]=null}
+  if(p.special==='rainbow'){for(let x=0;x<SIZE;x++)grid[gy][x]=null;for(let y=0;y<SIZE;y++)grid[y][gx]=null}
+  tray[idx]=null;moves++;if(tray.every(x=>!x))tray=makeTray();
+  requestAnimationFrame(render);
+  resolve();
+}
+function resolve(){
+  let rows=[],cols=[];
+  for(let y=0;y<SIZE;y++)if(grid[y].every(Boolean))rows.push(y);
+  for(let x=0;x<SIZE;x++)if(grid.every(r=>r[x]))cols.push(x);
+  const n=rows.length+cols.length;
+  if(n){
+    let set=new Set();rows.forEach(y=>{for(let x=0;x<SIZE;x++)set.add(x+','+y)});cols.forEach(x=>{for(let y=0;y<SIZE;y++)set.add(x+','+y)});
+    set.forEach(k=>{
+      let [x,y]=k.split(',').map(Number);
+      let cell=grid[y][x];
+      if(cell&&(cell.t===1||cell.t===2)){cell.d--;if(cell.d<=0)grid[y][x]=null}
+      else grid[y][x]=null;
+    });
+    lines+=n;combo++;maxCombo=Math.max(maxCombo,combo);
+    score+=set.size*10+n*100+(combo>1?combo*100:0)+(n>=3?500:0);
+    popup('+'+(set.size*10+n*100));tone(520+Math.min(400,n*80));
+    if(combo>=2)setTimeout(()=>tone(520+Math.min(400,n*80)+180,.1),90);
+    if(combo>=3)burst();vibrate(25);
+  }else combo=0;
+  if(mode==='bomb'&&moves%5===0){let x=Math.floor(Math.random()*9),y=Math.floor(Math.random()*9);if(!grid[y][x])grid[y][x]={c:'#222',t:'blocker',d:1}}
+  hud();render();renderTray();checkAchievements();checkEnd();
+  if(tray.some(Boolean)){const cnt=countPlacements();if(cnt>0&&cnt<=2)toast('⚠️ انتبه! خيارات قليلة متبقية')}
+}
+function checkEnd(){
+  let win=false;
+  if(mode==='timed') return; // Time Attack ends only when the clock reaches zero.
+  if(current.type==='score')win=score>=current.val;
+  else if(current.type==='lines')win=lines>=current.val;
+  else if(current.type==='combo')win=maxCombo>=current.val;
+  if(mode==='endless'||mode==='zen'){if(!tray.some(p=>p&&canAnywhere(p.cells)))end(score>save.best);return}
+  if(mode==='daily'){if(win){save.dailyBest=Math.max(save.dailyBest,score);persist();end(true)}else if(!tray.some(p=>p&&canAnywhere(p.cells)))end(false);return}
+  if(win){
+    let ratio = current.type==='lines' ? lines/current.val : current.type==='combo' ? maxCombo/current.val : score/current.val;
+    const stars=ratio>=2.2?3:ratio>=1.5?2:1;
+    save.stars[current.id]=Math.max(save.stars[current.id]||0,stars);
+    if(current.id>=save.unlock)save.unlock=current.id+1;
+    save.coins+=20+stars*15;persist();end(true);
+  }else if(!tray.some(p=>p&&canAnywhere(p.cells)))end(false);
+}
+function end(win){
+  clearInterval(window._clock);
+  if(score>save.best){save.best=score;persist()}
+  let bonusReward=0;
+  if(mode==='endless'||mode==='zen'||mode==='timed'||mode==='bomb'){
+    bonusReward=Math.floor(score/40);
+    if(bonusReward>0){save.coins+=bonusReward;persist()}
+  }
+  checkAchievements();
+  $('result').classList.add('show');
+  $('resultTitle').textContent=win?'🎉 أحسنت!':'انتهت اللعبة';
+  $('resultStars').textContent=win?'⭐'.repeat(save.stars[current.id]||1)+'☆'.repeat(3-(save.stars[current.id]||1)):'';
+  $('resultScore').textContent='SCORE: '+score;
+  $('resultReward').textContent = (win&&mode==='adventure') ? '+'+(20+(save.stars[current.id]||1)*15)+' 🪙' : (bonusReward>0?'+'+bonusReward+' 🪙':'');
+  $('nextBtn').style.display=mode==='adventure'&&win?'block':'none';
+  if(win)burst(45);
+}
+function closeResult(){$('result').classList.remove('show');menu()}
+function nextLevel(){closeResult();let id=current.id+1;startLevel(makeLevel(id),true)}
+function hud(){refreshCoins();$('score').textContent=score;$('gameBest').textContent=save.best;$('target').textContent=mode==='timed'?`⏱️ ${timer||0}s — حاول جمع أكبر نقاط ممكنة | SCORE: ${score}`:current.type==='score'?`🎯 الهدف: ${score} / ${current.val} نقطة`:current.type==='lines'?`🎯 الهدف: ${lines} / ${current.val} صف أو عمود`:current.type==='combo'?`🎯 الهدف: Combo x${maxCombo} / x${current.val}`:`🎯 SCORE: ${score}`;$('comboMeter').style.width=Math.min(100,maxCombo*10)+'%'}
+function renderPower(){
+  let d={hammer:['🔨',120],line:['⚡',200],rotate:['🔄',60],shuffle:['🔀',80],undo:['↩️',100],magic:['✨',250]};
+  $('powers').innerHTML='';
+  Object.entries(d).forEach(([id,v])=>{
+    let b=document.createElement('button');b.className='power';
+    b.innerHTML=v[0]+`<span class=count>${save.power[id]||0}</span>`;
+    if(pendingPower===id)b.style.boxShadow='0 0 0 3px var(--gold)';
+    b.onclick=()=>power(id);
+    $('powers').appendChild(b);
+  });
+}
+function power(id){
+  if(pendingPower===id){pendingPower=null;renderPower();toast('تم الإلغاء');return}
+  if(!(save.power[id]>0)){toast('لا يوجد عدد كافٍ');return}
+  if(id==='shuffle'){save.power[id]--;tray=makeTray();persist();renderPower();renderTray();hud();return}
+  if(id==='undo'){
+    if(!history){toast('لا يوجد تراجع');return}
+    save.power[id]--;grid=history.grid;score=history.score;combo=history.combo;lines=history.lines;moves=history.moves;tray=history.tray;history=null;
+    persist();renderPower();render();renderTray();hud();return;
+  }
+  if(id==='hammer'||id==='line'){pendingPower=id;renderPower();toast(id==='hammer'?'👆 اضغط على أي خانة باللوحة للتفجير':'👆 اضغط على أي خانة لمسح صفها وعمودها');return}
+  if(id==='rotate'||id==='magic'){pendingPower=id;renderPower();toast(id==='rotate'?'👆 اضغط على قطعة بالأسفل لتدويرها':'👆 اضغط على قطعة بالأسفل لتفعيل السحر');return}
+}
+function boardTap(e){
+  if(!pendingPower||(pendingPower!=='hammer'&&pendingPower!=='line'))return;
+  const r=$('board').getBoundingClientRect(),cs=r.width/SIZE;
+  const gx=Math.floor((e.clientX-r.left)/cs),gy=Math.floor((e.clientY-r.top)/cs);
+  if(gx<0||gx>=SIZE||gy<0||gy>=SIZE)return;
+  history={grid:JSON.parse(JSON.stringify(grid)),score,combo,lines,moves,tray:JSON.parse(JSON.stringify(tray))};
+  if(pendingPower==='hammer'){
+    for(let y=gy-1;y<=gy+1;y++)for(let x=gx-1;x<=gx+1;x++)if(y>=0&&y<SIZE&&x>=0&&x<SIZE)grid[y][x]=null;
+    save.power.hammer--;
+  }else if(pendingPower==='line'){
+    for(let x=0;x<SIZE;x++)grid[gy][x]=null;
+    for(let y=0;y<SIZE;y++)grid[y][gx]=null;
+    save.power.line--;
+  }
+  pendingPower=null;
+  persist();renderPower();render();renderTray();hud();checkAchievements();checkEnd();
+}
+function resize(){let w=$('boardWrap').clientWidth,d=devicePixelRatio||1;let c=$('board');c.width=w*d;c.height=w*d;ctx=c.getContext('2d');ctx.setTransform(d,0,0,d,0,0);let tw=$('trayWrap').clientWidth,h=125;let tc=$('tray');tc.width=tw*d;tc.height=h*d;tctx=tc.getContext('2d');tctx.setTransform(d,0,0,d,0,0);render();renderTray()}
+window.addEventListener('resize',()=>{if($('game').classList.contains('active'))resize()});
+function draw(c,x,y,s,col,t,d){
+  c.save();c.shadowColor='#0006';c.shadowBlur=4;c.shadowOffsetY=2;
+  let fill=t==='bomb'?'#292929':t==='rainbow'?'#e0545e':t==='blocker'?'#1c1c1c':col;
+  c.fillStyle=fill;c.beginPath();c.roundRect(x+s*.06,y+s*.06,s*.88,s*.88,s*.16);c.fill();
+  c.fillStyle='#fff3';c.fillRect(x+s*.16,y+s*.13,s*.55,s*.12);
+  if(t==='bomb')c.fillText('💣',x+s*.3,y+s*.62);
+  if(t==='rainbow')c.fillText('★',x+s*.34,y+s*.62);
+  if(t==='blocker')c.fillText('⛔',x+s*.28,y+s*.62);
+  if((t===1||t===2)&&d===1){c.fillStyle='#fff8';c.fillRect(x+s*.3,y+s*.3,s*.4,s*.4)}
+  c.restore();
+}
+function getDragOrigin(clientX,clientY,p){
+  const r=$('board').getBoundingClientRect(),cs=r.width/SIZE;
+  const minX=Math.min(...p.cells.map(a=>a[0])),maxX=Math.max(...p.cells.map(a=>a[0]));
+  const minY=Math.min(...p.cells.map(a=>a[1])),maxY=Math.max(...p.cells.map(a=>a[1]));
+  const centerX=(minX+maxX)/2,centerY=(minY+maxY)/2;
+  return {gx:Math.round((clientX-r.left)/cs-centerX),gy:Math.round((clientY-r.top)/cs-centerY)};
+}
+function render(){
+  if(!ctx)return;let s=$('boardWrap').clientWidth,cs=s/SIZE;
+  const skin=skinDefs[save.skin]||skinDefs.classic;
+  ctx.clearRect(0,0,s,s);ctx.fillStyle=skin.bg;ctx.fillRect(0,0,s,s);
+  for(let y=0;y<9;y++)for(let x=0;x<9;x++){ctx.strokeStyle='#0002';ctx.strokeRect(x*cs,y*cs,cs,cs);let p=grid[y][x];if(p)draw(ctx,x*cs,y*cs,cs,p.c,p.t,p.d)}
+  if(drag){
+    const o=getDragOrigin(drag.x,drag.y,drag.p),ok=canPlace(drag.p.cells,o.gx,o.gy);
+    drag.p.cells.forEach(([x,y])=>{if(x+o.gx>=0&&y+o.gy>=0&&x+o.gx<9&&y+o.gy<9){ctx.fillStyle=ok?'#fff5':'#d9534f88';ctx.fillRect((x+o.gx)*cs+4,(y+o.gy)*cs+4,cs-8,cs-8)}});
+  }
+  if(placedFx.length){
+    ctx.font=`${cs*.5}px sans-serif`;
+    placedFx.forEach(f=>{
+      const t=(performance.now()-f.start)/220;
+      if(t<1){ctx.globalAlpha=Math.max(0,1-t);ctx.fillStyle='#fff';ctx.fillRect(f.x*cs,f.y*cs,cs,cs);ctx.globalAlpha=1}
+    });
+    placedFx=placedFx.filter(f=>performance.now()-f.start<220);
+    if(placedFx.length)requestAnimationFrame(render);
+  }
+}
+function renderTray(){if(!tctx)return;let w=$('tray').clientWidth;tctx.clearRect(0,0,w,125);tray.forEach((p,i)=>{if(!p||(drag&&drag.i===i))return;let cs=Math.min(w/15,20),maxx=Math.max(...p.cells.map(a=>a[0]))+1,maxy=Math.max(...p.cells.map(a=>a[1]))+1,ox=i*w/3+(w/3-maxx*cs)/2,oy=(125-maxy*cs)/2;p.cells.forEach(([x,y])=>draw(tctx,ox+x*cs,oy+y*cs,cs,p.c,p.special))})}
+function bind(){
+  let start=e=>{
+    let p=e.touches?e.touches[0]:e,rect=$('tray').getBoundingClientRect(),i=Math.floor((p.clientX-rect.left)/(rect.width/3));
+    if(i<0||i>=3||!tray[i])return;
+    if(pendingPower==='rotate'){
+      history={grid:JSON.parse(JSON.stringify(grid)),score,combo,lines,moves,tray:JSON.parse(JSON.stringify(tray))};
+      let pc=tray[i];pc.cells=pc.cells.map(([x,y])=>[-y,x]);
+      const minx=Math.min(...pc.cells.map(a=>a[0])),miny=Math.min(...pc.cells.map(a=>a[1]));
+      pc.cells=pc.cells.map(([x,y])=>[x-minx,y-miny]);
+      save.power.rotate--;pendingPower=null;persist();renderPower();renderTray();toast('🔄 تم التدوير');return;
+    }
+    if(pendingPower==='magic'){
+      history={grid:JSON.parse(JSON.stringify(grid)),score,combo,lines,moves,tray:JSON.parse(JSON.stringify(tray))};
+      tray[i].special='rainbow';
+      save.power.magic--;pendingPower=null;persist();renderPower();renderTray();toast('✨ القطعة أصبحت خارقة');return;
+    }
+    drag={p:tray[i],i,x:p.clientX,y:p.clientY};renderTray();
+  };
+  let move=e=>{if(!drag)return;e.preventDefault();let p=e.touches?e.touches[0]:e;drag.x=p.clientX;drag.y=p.clientY;render()};
+  let end=e=>{if(!drag)return;let p=e.changedTouches?e.changedTouches[0]:e,o=getDragOrigin(p.clientX,p.clientY,drag.p);place(drag.p,drag.i,o.gx,o.gy);drag=null;render();renderTray()};
+  $('tray').addEventListener('touchstart',start,{passive:false});$('tray').addEventListener('mousedown',start);
+  window.addEventListener('touchmove',move,{passive:false});window.addEventListener('mousemove',move);
+  window.addEventListener('touchend',end);window.addEventListener('mouseup',end);
+  $('board').addEventListener('click',boardTap);
+}
+bind();
+function popup(s){let e=document.createElement('div');e.className='popup';e.textContent=s;e.style.left='35%';e.style.top='45%';$('boardWrap').appendChild(e);setTimeout(()=>e.remove(),900)}
+function burst(n=20){if(!save.settings.fx)return;for(let i=0;i<n;i++){let e=document.createElement('i');e.className='confetti';e.style.left=Math.random()*100+'vw';e.style.top='-20px';e.style.transform=`rotate(${Math.random()*360}deg)`;e.style.background=palette[i%palette.length];document.body.appendChild(e);setTimeout(()=>e.remove(),1600)}}
+function vibrate(n){if(save.settings.vib&&navigator.vibrate)navigator.vibrate(n)}
+let ac;function tone(f,dur=.08){if(!save.settings.sfx)return;try{ac??=new AudioContext();let o=ac.createOscillator(),g=ac.createGain();o.frequency.value=f;g.gain.value=.06;o.connect(g);g.connect(ac.destination);o.start();o.stop(ac.currentTime+dur)}catch{}}
+function toast(s){$('toast').textContent=s;$('toast').classList.add('show');clearTimeout(window._toast);window._toast=setTimeout(()=>$('toast').classList.remove('show'),1600)}
+function openShop(){
+  hide();$('shop').classList.add('active');refreshCoins();
+  let defs={hammer:['🔨',120],line:['⚡',200],rotate:['🔄',60],shuffle:['🔀',80],undo:['↩️',100],magic:['✨',250]};
+  $('shopPower').innerHTML='';
+  Object.entries(defs).forEach(([id,v])=>{let d=document.createElement('div');d.className='item';d.innerHTML=`${v[0]}<br>${id}<br>🪙${v[1]}<br>Owned: ${save.power[id]||0}`;d.onclick=()=>{if(save.coins>=v[1]){save.coins-=v[1];save.power[id]++;persist();openShop()}else toast('لا توجد عملات كافية')};$('shopPower').appendChild(d)});
+  let skins={classic:['🪵','Classic',0,'#8a5a35'],crystal:['💎','Crystal',300,'#36748c'],candy:['🍬','Candy',300,'#b54d7c'],galaxy:['🌌','Galaxy',500,'#342760'],jungle:['🌿','Jungle',300,'#285d37'],fire:['🔥','Fire',400,'#7b2915'],ice:['❄️','Ice',400,'#3c7785'],gold:['👑','Golden',700,'#a87817']};
+  $('shopSkins').innerHTML='';
+  Object.entries(skins).forEach(([id,v])=>{let d=document.createElement('div');d.className='item';d.style.background=v[3];d.innerHTML=`${v[0]}<br>${v[1]}<br>${save.owned.includes(id)?(save.skin===id?'مفعّل ✔️':'Owned'):'🪙'+v[2]}`;d.onclick=()=>{if(save.owned.includes(id)){save.skin=id}else if(save.coins>=v[2]){save.coins-=v[2];save.owned.push(id);save.skin=id}else return toast('لا توجد عملات كافية');persist();checkAchievements();openShop()};$('shopSkins').appendChild(d)});
+}
+function openCollection(){hide();$('collection').classList.add('active');let names={classic:'🪵 Classic',crystal:'💎 Crystal',candy:'🍬 Candy',galaxy:'🌌 Galaxy',jungle:'🌿 Jungle',fire:'🔥 Fire',ice:'❄️ Ice',gold:'👑 Golden'};$('collectionGrid').innerHTML=Object.entries(names).map(([id,n])=>`<div class=item style="opacity:${save.owned.includes(id)?1:.3}">${n}<br>${save.owned.includes(id)?'✔️':'🔒'}</div>`).join('')}
+function openAchievements(){hide();$('achievements').classList.add('active');$('achGrid').innerHTML=achievementDefs.map(a=>`<div class=item style="opacity:${save.achievements[a.id]?1:.35}">${a.name}<br>${save.achievements[a.id]?'✔️ +'+a.reward+' 🪙':'🔒 +'+a.reward+' 🪙'}</div>`).join('')}
+function openSettings(){hide();$('settings').classList.add('active');['sfx','vib','fx'].forEach(k=>$(k).classList.toggle('on',save.settings[k]))}
+function toggle(k){save.settings[k]=!save.settings[k];persist();openSettings()}
+function resetGame(){if(confirm('حذف كل التقدم؟')){localStorage.removeItem('wp2');location.reload()}}
+function openDaily(){hide();$('daily').classList.add('active');let d=new Date().toISOString().slice(0,10);$('streak').textContent=`🔥 ${save.streak} يوم`;$('dailyText').textContent=`هدف اليوم: ${1200+(d.charCodeAt(8)||1)*25} نقطة | أفضل: ${save.dailyBest}`}
+function claimDaily(){let d=new Date().toISOString().slice(0,10);if(save.lastDaily===d)return toast('تم الاستلام اليوم');save.lastDaily=d;save.streak++;let r=50+Math.min(save.streak,7)*10;save.coins+=r;persist();checkAchievements();toast('🎁 +'+r+' عملة');openDaily()}
+function startDaily(){let d=new Date().toISOString().slice(0,10);current={type:'score',val:1200+(d.charCodeAt(8)||1)*25,stage:2,obs:[]};mode='daily';setupGame(current)}
+function openMode(){hide();$('mode').classList.add('active')}
+function openBonus(){hide();$('bonus').classList.add('active');bonusInit()}
+let bg=[],bs=0,bc;
+function bonusInit(){bc=$('bonusCanvas').getContext('2d');bg=Array.from({length:5},()=>Array.from({length:5},()=>Math.floor(Math.random()*5)));bs=0;$('bonusScore').textContent=0;refreshCoins();drawBonus()}
+function drawBonus(){let s=$('bonusCanvas').clientWidth/5;bc.clearRect(0,0,s*5,s*5);for(let y=0;y<5;y++)for(let x=0;x<5;x++){bc.fillStyle=palette[bg[y][x]];bc.beginPath();bc.roundRect(x*s+4,y*s+4,s-8,s-8,12);bc.fill()}}
+$('bonusCanvas').onclick=e=>{
+  let r=e.target.getBoundingClientRect(),s=r.width/5,x=Math.floor((e.clientX-r.left)/s),y=Math.floor((e.clientY-r.top)/s);
+  for(let i=0;i<5;i++)bg[y][i]=bg[y][i]+1>=5?0:bg[y][i]+1;
+  let run=bg[y][0],n=1;
+  for(let i=1;i<5;i++){if(bg[y][i]===run)n++;else{if(n>=3){bs+=n*15;save.coins+=n*5}n=1;run=bg[y][i]}}
+  if(n>=3){bs+=n*15;save.coins+=n*5}
+  persist();$('bonusScore').textContent=bs;drawBonus();
+};
+window.addEventListener('load',()=>{ctx=$('board').getContext('2d');tctx=$('tray').getContext('2d');refreshCoins();if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{})}})
+</script></body></html>

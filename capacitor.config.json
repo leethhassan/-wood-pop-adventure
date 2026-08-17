@@ -1,0 +1,9 @@
+{
+  "appId": "com.yourname.woodpop",
+  "appName": "WOOD POP ADVENTURE",
+  "webDir": "www",
+  "bundledWebRuntime": false,
+  "server": {
+    "androidScheme": "https"
+  }
+}
