@@ -1,0 +1,16 @@
+{
+  "name": "WOOD POP ADVENTURE 2.0",
+  "short_name": "Wood Pop",
+  "description": "لغز المكعبات الخشبية — نسخة محسّنة",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#24170f",
+  "theme_color": "#24170f",
+  "dir": "rtl",
+  "lang": "ar",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
